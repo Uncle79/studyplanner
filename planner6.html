@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<title>Study Calendar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"Noto Sans KR","Noto Sans JP","Noto Sans SC",Roboto,sans-serif}
+body{background:#fff;color:#202124;max-width:480px;margin:auto;height:100dvh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:4px;padding:12px 10px;border-bottom:1px solid #eee}
+header h1{font-size:19px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header button{border:none;background:none;font-size:22px;padding:4px 10px;border-radius:20px;cursor:pointer}
+#today{font-size:13px;border:1px solid #dadce0}#set{font-size:18px}
+main{flex:1;overflow:auto;padding-bottom:80px}
+.view{display:none}.view.show{display:block}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;color:#70757a;padding:6px 0}
+.wk span:first-child{color:#d93025}.wk span:last-child{color:#1a73e8}
+#grid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #eee}
+.cell{min-height:74px;border-right:1px solid #f1f1f1;border-bottom:1px solid #f1f1f1;padding:2px;overflow:hidden;cursor:pointer}
+.cell.out{opacity:.35}.cell.sel{background:#e8f0fe}
+.n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;font-size:12px;border-radius:50%}
+.n.sun{color:#d93025}.n.sat{color:#1a73e8}.n.today{background:#1a73e8;color:#fff}
+.chip{font-size:10px;color:#fff;border-radius:3px;padding:1px 3px;margin-top:1px;white-space:nowrap;overflow:hidden}
+.more{font-size:10px;color:#70757a}
+#agenda{padding:14px}#agenda h3{font-size:15px;margin-bottom:8px}
+.item{display:flex;gap:10px;padding:10px;border-radius:10px;background:#f8f9fa;margin-bottom:6px;cursor:pointer}
+.item.gap{background:#fffdf5;border:1.5px dashed #f6bf26}
+.item .prog{margin-top:6px}
+.bar{width:4px;border-radius:2px;flex-shrink:0}
+.item small,.word small{display:block;color:#70757a;font-size:12px;margin-top:2px}
+.dd{color:#d93025;font-weight:700;font-size:12px;margin-left:6px}
+.due{background:#fef7e0;color:#b06000;padding:10px;border-radius:10px;margin-bottom:8px;cursor:pointer}
+.empty{color:#9aa0a6;text-align:center;padding:30px 0;font-size:14px}
+.seg{display:flex;gap:6px;padding:10px 14px;overflow-x:auto}
+.seg button{border:1px solid #dadce0;background:#fff;border-radius:16px;padding:6px 14px;font-size:13px;white-space:nowrap;cursor:pointer}
+.seg button.on{background:#e8f0fe;border-color:#1a73e8;color:#1a73e8}
+.seg small{opacity:.6}
+.tt{display:grid;grid-template-columns:34px repeat(7,1fr);padding:0 6px}
+.tt .hd{text-align:center;font-size:12px;padding:6px 0;color:#70757a}.tt .hd.td{color:#1a73e8;font-weight:700}
+.tcol{position:relative;border-left:1px solid #eee;background:repeating-linear-gradient(#fff 0 43px,#eee 43px 44px)}
+.tcol.td{background:repeating-linear-gradient(#f4f8ff 0 43px,#e3e9f5 43px 44px)}
+.hr{height:44px;font-size:10px;color:#9aa0a6;text-align:right;padding-right:4px}
+.blk{position:absolute;left:1px;right:1px;border-radius:4px;color:#fff;font-size:10px;padding:2px;overflow:hidden;cursor:pointer;line-height:1.2}
+#noteList{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px}
+.card{border-radius:12px;overflow:hidden;background:#f8f9fa;cursor:pointer}
+.card img{width:100%;height:120px;object-fit:cover;display:block}.card div{padding:8px;font-size:12px}
+.badge{display:inline-block;background:#1a73e8;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px;margin-right:4px}
+.vbar{display:flex;gap:8px;padding:0 14px 10px;align-items:center}
+#wq{flex:1;min-width:0;padding:10px 14px;border:1px solid #dadce0;border-radius:24px;font-size:15px;background:#f1f3f4}
+.mini{border:1px solid #dadce0;background:#fff;border-radius:20px;padding:8px 12px;font-size:13px;white-space:nowrap;cursor:pointer;align-self:stretch}
+#wordList{padding:0 14px}
+.word{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:#f8f9fa;margin-bottom:6px;cursor:pointer}
+.word b{font-size:16px}
+.spk{border:none;background:none;font-size:16px;cursor:pointer;vertical-align:middle}
+.wcard{font-size:34px;font-weight:700;text-align:center;padding:50px 10px;background:#f1f3f4;border-radius:12px;margin:10px 0;word-break:break-word}
+.wcard.mc{font-size:20px;font-weight:500;line-height:1.7;padding:30px 10px}
+.tin{width:100%;padding:14px;border:2px solid #1a73e8;border-radius:12px;font-size:20px;text-align:center}
+.stat{display:flex;gap:10px}
+.stat div{flex:1;background:#f8f9fa;border-radius:12px;padding:14px;text-align:center;font-size:13px;color:#70757a}
+.stat b{display:block;font-size:28px;color:#1a73e8}
+.info{color:#70757a;margin:12px 0;font-size:13px;line-height:1.5}
+.lbl{font-size:13px;color:#5f6368;margin:14px 0 6px;font-weight:600}
+#rv{padding:16px}#rv .seg{padding:0}
+#rv select{width:100%;padding:10px;border:1px solid #dadce0;border-radius:10px;font-size:14px}
+.big{width:100%;border-radius:12px;margin:10px 0;max-height:50vh;object-fit:contain;background:#f1f3f4}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;margin-top:8px;cursor:pointer}
+.btn:disabled{opacity:.4}
+.pri{background:#1a73e8;color:#fff}.sec{background:#f1f3f4}.bad{background:#fce8e6;color:#c5221f}.good{background:#e6f4ea;color:#137333}
+.ans{background:#e8f0fe;padding:14px;border-radius:12px;margin-top:8px;line-height:1.6}
+.prog{height:4px;background:#eee;border-radius:2px}.prog i{display:block;height:100%;background:#1a73e8;border-radius:2px}
+#fab{position:fixed;right:max(20px,calc(50% - 220px));bottom:84px;width:56px;height:56px;border-radius:16px;border:none;background:#c2e7ff;font-size:28px;box-shadow:0 2px 6px #0003;cursor:pointer}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;background:#f3f6fc;border-top:1px solid #eee}
+nav button{flex:1;min-width:0;border:none;background:none;padding:8px 0 10px;font-size:10px;color:#444;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav i{display:block;font-style:normal;font-size:20px;width:48px;margin:0 auto 2px;border-radius:16px;padding:2px 0}
+nav button.on i{background:#c2e7ff}
+nav b{position:absolute;top:4px;right:calc(50% - 22px);background:#d93025;color:#fff;font-size:10px;border-radius:8px;padding:0 5px}
+#dim{position:fixed;inset:0;background:#0005;display:none}#dim.open{display:block}
+#sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:480px;background:#fff;border-radius:20px 20px 0 0;padding:20px;transform:translate(-50%,100%);transition:.25s;max-height:90dvh;overflow:auto}
+#sheet.open{transform:translate(-50%,0)}
+#sheet h3{margin-bottom:12px}
+#sheet input,#sheet select,#sheet textarea{width:100%;padding:12px;border:1px solid #dadce0;border-radius:10px;font-size:15px;margin-bottom:8px}
+#sheet label{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:15px}
+#sheet label input{width:20px;height:20px;margin:0}
+.row{display:flex;gap:8px}
+.colors{display:flex;gap:10px;margin:6px 0 12px}
+.colors span{width:26px;height:26px;border-radius:50%;cursor:pointer}
+.colors span.on{outline:3px solid #202124;outline-offset:2px}
+.btns{display:flex;gap:8px}.btns button{flex:1}
+.lgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lgs button{padding:12px;border:1px solid #dadce0;border-radius:10px;background:#fff;font-size:15px;cursor:pointer}
+.lgs .on{border-color:#1a73e8;background:#e8f0fe;color:#1a73e8}
+#print{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{display:block;max-width:none;height:auto}
+  body>*:not(#print){display:none!important}
+  #print{display:block;color:#000}
+  .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:12px;font-size:13px}
+  .ph h2,.pa h2{font-size:18px}
+  .pg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pq{break-inside:avoid;border:1px solid #bbb;border-radius:6px;padding:8px}
+  .pq img{display:block;width:100%;max-height:85mm;object-fit:contain;margin-top:4px}
+  .sp{height:28mm}
+  .pa{break-before:page}
+  .pa h2{border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
+  .pa li{margin:0 0 6px 22px;font-size:13px}
+}
+</style>
+</head>
+<body>
+<header>
+  <button id="prev">‹</button><h1 id="title"></h1><button id="next">›</button>
+  <button id="today" data-i="today"></button><button id="set">⚙️</button>
+</header>
+<main>
+  <section id="v-cal" class="view show"><div class="wk" id="wk"></div><div id="grid"></div><div id="agenda"></div></section>
+  <section id="v-tt" class="view">
+    <div class="seg" id="ttFilter">
+      <button data-f="all" class="on" data-i="all"></button>
+      <button data-f="school">🏫 <span data-i="school"></span></button>
+      <button data-f="academy">📚 <span data-i="academy"></span></button>
+    </div>
+    <div id="ttGrid"></div>
+  </section>
+  <section id="v-notes" class="view">
+    <div class="vbar" style="padding-top:10px"><div class="seg" id="subFilter" style="flex:1;min-width:0;padding:0"></div><button class="mini" id="printBtn" data-i="print"></button></div>
+    <div id="noteList"></div>
+  </section>
+  <section id="v-vocab" class="view">
+    <div class="seg" id="fdBar"></div>
+    <div class="vbar"><input id="wq" type="search" autocapitalize="off"><button class="mini" id="bulkBtn" data-i="bulk"></button></div>
+    <div id="wordList"></div>
+  </section>
+  <section id="v-review" class="view"><div id="rv"></div></section>
+</main>
+<button id="fab">+</button>
+<nav>
+  <button data-v="cal" class="on"><i>📅</i><span data-i="cal"></span></button>
+  <button data-v="tt"><i>🗓️</i><span data-i="tt"></span></button>
+  <button data-v="notes"><i>📷</i><span data-i="notes"></span></button>
+  <button data-v="vocab"><i>🔤</i><span data-i="vocab"></span></button>
+  <button data-v="review"><i>🧠</i><span data-i="review"></span><b id="badge" hidden></b></button>
+</nav>
+<div id="dim"></div><div id="sheet"></div>
+<div id="print"></div>
+<input type="file" id="file" accept="image/*" capture="environment" hidden>
+
+<script>
+/* ================= 다국어 ================= */
+const LANGS={ko:'한국어',en:'English',ja:'日本語',zh:'中文'};
+const LOCS={ko:'ko-KR',en:'en-US',ja:'ja-JP',zh:'zh-CN'};
+const T={
+ko:{cal:'캘린더',tt:'시간표',notes:'오답노트',vocab:'단어장',review:'복습',today:'오늘',all:'전체',school:'학교',academy:'학원',
+ noEvents:'일정이 없습니다',dueBanner:n=>`🧠 오늘 복습할 항목 ${n}개 →`,event:'일정',newEvent:'새 일정',editEvent:'일정 수정',
+ titlePh:'제목 (예: 수학 수행평가)',needTitleDate:'제목과 날짜를 입력하세요',del:'삭제',save:'저장',saveNext:'저장 후 계속',
+ ttTitle:'주간 시간표',ttEmpty:'+ 버튼으로 학교·학원 수업을 추가하세요',addClass:'수업 추가',editClass:'수업 수정',
+ subjPh:'과목 (예: 수학)',placePh:'장소/선생님 (선택)',needSubj:'과목명을 입력하세요',badTime:'종료 시간이 시작 시간보다 늦어야 합니다',
+ subj:{kor:'국어',math:'수학',eng:'영어',sci:'과학',soc:'사회',etc:'기타'},
+ notesEmpty:'📷 + 버튼으로 틀린 문제를 찍어보세요',saveNote:'오답 저장',memoPh:'틀린 이유 / 메모 (예: 부호 실수)',ansPh:'정답 (예: ③, x=2)',
+ noMemo:'메모 없음',answer:'정답',stats:(o,n,d)=>`맞음 ${o} · 틀림 ${n} · 다음 복습 ${d}`,confirmDel:'삭제할까요?',storageFull:'저장에 실패했습니다.',
+ vocabEmpty:'+ 버튼으로 단어를 추가하세요',searchPh:'🔍 단어 또는 뜻 검색',addWord:'단어 추가',editWord:'단어 수정',
+ wordPh:'영어 단어 (예: apple)',meanPh:i=>`뜻 ${i}${i>1?' (선택)':''}`,needWord:'단어와 뜻을 1개 이상 입력하세요',
+ dueNotes:'복습할 오답',dueWords:'복습할 단어',rvInfo:'맞히면 1→3→7→14→30일 뒤 다시 나오고, 틀리면 내일 다시 나와요.',
+ startAll:'오늘 복습 전체 시작',startNotes:'📷 오답만 복습',startWords:'🔤 단어만 복습',random:'🎲 랜덤 10개',
+ done:n=>`🎉 복습 완료! (${n}개)`,back:'돌아가기',show:'정답 확인',wrong:'또 틀렸어요',right:'맞았어요',quit:'그만하기',
+ settings:'설정',language:'언어',storage:(u,q)=>`저장공간 사용: ${u} / ${q}`,folder:'폴더',noFolder:'폴더 없음',newFolder:'새 폴더',
+ editFolder:'폴더 수정',folderPh:'폴더 이름 (예: 능률 VOCA Day 3)',needName:'이름을 입력하세요',folderDel:'폴더를 삭제할까요? (단어는 \'폴더 없음\'으로 이동)',
+ bulk:'📋 일괄 입력',bulkHelp:'한 줄에 하나씩: 단어 - 뜻1, 뜻2 (구분: " - ", 탭, :, =)',bulkPh:'apple - 사과, 애플\nrun - 달리다, 운영하다',
+ bulkAdd:'추가',bulkResult:(a,s)=>`${a}개 추가 · ${s}줄 건너뜀 (형식 오류/중복)`,
+ mode:'단어 복습 방식',modes:{flash:'단어→뜻',rev:'뜻→단어',type:'타이핑',mix:'섞기'},typePh:'영어 단어 입력',check:'채점',
+ correct:'⭕ 정답!',incorrect:'❌ 오답',yourAns:'내 답',next:'다음',
+ kindEvent:'일정',kindExam:'시험',rangePh:'시험 범위 (예: 2단원~4단원)',goalPh:'목표 공부 시간 (시간, 예: 10)',range:'범위',todayGoal:'오늘 목표',
+ hm:(h,m)=>[h&&h+'시간',(m||!h)&&m+'분'].filter(Boolean).join(' '),
+ logTitle:'오늘 공부 기록',logPh:'오늘 공부한 시간 (분)',examEdit:'시험 수정',
+ autoTag:s=>`🏷️ 지금 수업(${s}) 기준으로 과목을 자동 선택했어요`,classSub:'과목 분류 (오답 자동 태그용)',
+ gap:'자투리 시간',gapText:(w,n)=>`단어 ${w}개 · 오답 ${n}개 복습`,gapFree:'복습 완료! 랜덤 복습 어때요?',
+ examPrio:(s,n)=>`📝 ${s} 시험 대비 오답 ${n}개`,
+ print:'🖨️ 시험지',printTitle:'오답 시험지 만들기',scope:'출제 범위',scopes:{all:'전체',due:'오늘 복습 대상',wrong:'복습에서 또 틀린 문제',recent:'최근 7일'},
+ maxQ:'최대 문항 수',withAns:'정답지 포함',shuffle:'순서 섞기',make:'PDF 만들기',paperTitle:'오답 시험지',name:'이름',ansSheet:'정답',
+ noItems:'해당하는 문제가 없습니다',printHint:'인쇄 화면에서 "PDF로 저장"을 선택하세요.'},
+en:{cal:'Calendar',tt:'Timetable',notes:'Mistakes',vocab:'Words',review:'Review',today:'Today',all:'All',school:'School',academy:'Academy',
+ noEvents:'No events',dueBanner:n=>`🧠 ${n} items to review today →`,event:'Event',newEvent:'New event',editEvent:'Edit event',
+ titlePh:'Title (e.g. Math quiz)',needTitleDate:'Please enter a title and date',del:'Delete',save:'Save',saveNext:'Save & next',
+ ttTitle:'Weekly timetable',ttEmpty:'Tap + to add school or academy classes',addClass:'Add class',editClass:'Edit class',
+ subjPh:'Subject (e.g. Math)',placePh:'Room / teacher (optional)',needSubj:'Please enter a subject',badTime:'End time must be after start time',
+ subj:{kor:'Korean',math:'Math',eng:'English',sci:'Science',soc:'Social',etc:'Other'},
+ notesEmpty:'📷 Tap + to snap a missed question',saveNote:'Save mistake',memoPh:'Why you got it wrong / memo',ansPh:'Answer (e.g. ③, x=2)',
+ noMemo:'No memo',answer:'Answer',stats:(o,n,d)=>`Correct ${o} · Wrong ${n} · Next ${d}`,confirmDel:'Delete this?',storageFull:'Failed to save.',
+ vocabEmpty:'Tap + to add words',searchPh:'🔍 Search words or meanings',addWord:'Add word',editWord:'Edit word',
+ wordPh:'English word (e.g. apple)',meanPh:i=>`Meaning ${i}${i>1?' (optional)':''}`,needWord:'Enter a word and at least one meaning',
+ dueNotes:'Mistakes due',dueWords:'Words due',rvInfo:'Correct → shows again in 1→3→7→14→30 days. Wrong → tomorrow.',
+ startAll:'Start today\'s review',startNotes:'📷 Mistakes only',startWords:'🔤 Words only',random:'🎲 Random 10',
+ done:n=>`🎉 Review complete! (${n})`,back:'Back',show:'Show answer',wrong:'Wrong again',right:'Got it',quit:'Quit',
+ settings:'Settings',language:'Language',storage:(u,q)=>`Storage used: ${u} / ${q}`,folder:'Folder',noFolder:'No folder',newFolder:'New folder',
+ editFolder:'Edit folder',folderPh:'Folder name (e.g. Vocab Book Day 3)',needName:'Please enter a name',folderDel:'Delete folder? (Words move to "No folder")',
+ bulk:'📋 Bulk add',bulkHelp:'One per line: word - meaning1, meaning2 (separators: " - ", tab, :, =)',bulkPh:'apple - fruit, red fruit\nrun - to move fast',
+ bulkAdd:'Add',bulkResult:(a,s)=>`${a} added · ${s} lines skipped (format error/duplicate)`,
+ mode:'Word review mode',modes:{flash:'Word→Meaning',rev:'Meaning→Word',type:'Typing',mix:'Mix'},typePh:'Type the English word',check:'Check',
+ correct:'⭕ Correct!',incorrect:'❌ Incorrect',yourAns:'Your answer',next:'Next',
+ kindEvent:'Event',kindExam:'Exam',rangePh:'Exam scope (e.g. Ch.2–4)',goalPh:'Study goal (hours, e.g. 10)',range:'Scope',todayGoal:'Today\'s goal',
+ hm:(h,m)=>[h&&h+'h',(m||!h)&&m+'m'].filter(Boolean).join(' '),
+ logTitle:'Today\'s study log',logPh:'Minutes studied today',examEdit:'Edit exam',
+ autoTag:s=>`🏷️ Subject auto-selected from current class (${s})`,classSub:'Subject category (for auto-tagging)',
+ gap:'Free slot',gapText:(w,n)=>`Review ${w} words · ${n} mistakes`,gapFree:'All reviewed! Try a random review?',
+ examPrio:(s,n)=>`📝 ${s} exam prep: ${n} mistakes`,
+ print:'🖨️ Test',printTitle:'Create mistake test',scope:'Questions from',scopes:{all:'All',due:'Due today',wrong:'Missed again in review',recent:'Last 7 days'},
+ maxQ:'Max questions',withAns:'Include answer key',shuffle:'Shuffle',make:'Create PDF',paperTitle:'Mistake Test',name:'Name',ansSheet:'Answer Key',
+ noItems:'No matching questions',printHint:'Choose "Save as PDF" in the print dialog.'},
+ja:{cal:'カレンダー',tt:'時間割',notes:'間違いノート',vocab:'単語帳',review:'復習',today:'今日',all:'すべて',school:'学校',academy:'塾',
+ noEvents:'予定はありません',dueBanner:n=>`🧠 今日の復習 ${n}件 →`,event:'予定',newEvent:'新しい予定',editEvent:'予定を編集',
+ titlePh:'タイトル (例: 数学の小テスト)',needTitleDate:'タイトルと日付を入力してください',del:'削除',save:'保存',saveNext:'保存して次へ',
+ ttTitle:'週間時間割',ttEmpty:'+ ボタンで学校・塾の授業を追加',addClass:'授業を追加',editClass:'授業を編集',
+ subjPh:'科目 (例: 数学)',placePh:'教室/先生 (任意)',needSubj:'科目名を入力してください',badTime:'終了時刻は開始時刻より後にしてください',
+ subj:{kor:'国語',math:'数学',eng:'英語',sci:'理科',soc:'社会',etc:'その他'},
+ notesEmpty:'📷 + ボタンで間違えた問題を撮影',saveNote:'間違いを保存',memoPh:'間違えた理由 / メモ',ansPh:'正解 (例: ③, x=2)',
+ noMemo:'メモなし',answer:'正解',stats:(o,n,d)=>`正解 ${o} · 不正解 ${n} · 次回 ${d}`,confirmDel:'削除しますか?',storageFull:'保存に失敗しました。',
+ vocabEmpty:'+ ボタンで単語を追加',searchPh:'🔍 単語・意味を検索',addWord:'単語を追加',editWord:'単語を編集',
+ wordPh:'英単語 (例: apple)',meanPh:i=>`意味 ${i}${i>1?' (任意)':''}`,needWord:'単語と意味を1つ以上入力してください',
+ dueNotes:'復習する間違い',dueWords:'復習する単語',rvInfo:'正解すると1→3→7→14→30日後、不正解なら翌日にまた出題されます。',
+ startAll:'今日の復習を開始',startNotes:'📷 間違いのみ',startWords:'🔤 単語のみ',random:'🎲 ランダム10問',
+ done:n=>`🎉 復習完了! (${n}件)`,back:'戻る',show:'答えを見る',wrong:'また間違えた',right:'正解した',quit:'やめる',
+ settings:'設定',language:'言語',storage:(u,q)=>`使用容量: ${u} / ${q}`,folder:'フォルダ',noFolder:'フォルダなし',newFolder:'新しいフォルダ',
+ editFolder:'フォルダを編集',folderPh:'フォルダ名 (例: 単語帳 Day 3)',needName:'名前を入力してください',folderDel:'フォルダを削除しますか? (単語は「フォルダなし」へ移動)',
+ bulk:'📋 一括入力',bulkHelp:'1行に1つ: 単語 - 意味1, 意味2 (区切り: " - ", タブ, :, =)',bulkPh:'apple - りんご\nrun - 走る, 運営する',
+ bulkAdd:'追加',bulkResult:(a,s)=>`${a}件追加 · ${s}行スキップ (形式エラー/重複)`,
+ mode:'単語の復習方式',modes:{flash:'単語→意味',rev:'意味→単語',type:'タイピング',mix:'ミックス'},typePh:'英単語を入力',check:'採点',
+ correct:'⭕ 正解!',incorrect:'❌ 不正解',yourAns:'あなたの答え',next:'次へ',
+ kindEvent:'予定',kindExam:'試験',rangePh:'試験範囲 (例: 2章〜4章)',goalPh:'目標勉強時間 (時間、例: 10)',range:'範囲',todayGoal:'今日の目標',
+ hm:(h,m)=>[h&&h+'時間',(m||!h)&&m+'分'].filter(Boolean).join(''),
+ logTitle:'今日の勉強記録',logPh:'今日勉強した時間 (分)',examEdit:'試験を編集',
+ autoTag:s=>`🏷️ 現在の授業(${s})から科目を自動選択しました`,classSub:'科目分類 (自動タグ用)',
+ gap:'すきま時間',gapText:(w,n)=>`単語${w}個 · 間違い${n}件を復習`,gapFree:'復習完了! ランダム復習はいかが?',
+ examPrio:(s,n)=>`📝 ${s}の試験対策 間違い${n}件`,
+ print:'🖨️ テスト',printTitle:'間違いテストを作成',scope:'出題範囲',scopes:{all:'すべて',due:'今日の復習対象',wrong:'復習でまた間違えた問題',recent:'最近7日'},
+ maxQ:'最大問題数',withAns:'解答を含める',shuffle:'順番をシャッフル',make:'PDFを作成',paperTitle:'間違いテスト',name:'名前',ansSheet:'解答',
+ noItems:'該当する問題がありません',printHint:'印刷画面で「PDFに保存」を選んでください。'},
+zh:{cal:'日历',tt:'课程表',notes:'错题本',vocab:'单词本',review:'复习',today:'今天',all:'全部',school:'学校',academy:'补习班',
+ noEvents:'没有日程',dueBanner:n=>`🧠 今天待复习 ${n} 项 →`,event:'日程',newEvent:'新建日程',editEvent:'编辑日程',
+ titlePh:'标题 (例: 数学小测)',needTitleDate:'请输入标题和日期',del:'删除',save:'保存',saveNext:'保存并继续',
+ ttTitle:'每周课程表',ttEmpty:'点击 + 添加学校或补习班课程',addClass:'添加课程',editClass:'编辑课程',
+ subjPh:'科目 (例: 数学)',placePh:'教室/老师 (可选)',needSubj:'请输入科目名称',badTime:'结束时间必须晚于开始时间',
+ subj:{kor:'语文',math:'数学',eng:'英语',sci:'科学',soc:'社会',etc:'其他'},
+ notesEmpty:'📷 点击 + 拍下做错的题',saveNote:'保存错题',memoPh:'错误原因 / 备注',ansPh:'答案 (例: ③, x=2)',
+ noMemo:'无备注',answer:'答案',stats:(o,n,d)=>`答对 ${o} · 答错 ${n} · 下次 ${d}`,confirmDel:'确定删除吗?',storageFull:'保存失败。',
+ vocabEmpty:'点击 + 添加单词',searchPh:'🔍 搜索单词或释义',addWord:'添加单词',editWord:'编辑单词',
+ wordPh:'英语单词 (例: apple)',meanPh:i=>`释义 ${i}${i>1?' (可选)':''}`,needWord:'请输入单词和至少一个释义',
+ dueNotes:'待复习错题',dueWords:'待复习单词',rvInfo:'答对后在1→3→7→14→30天后再次出现，答错则明天再出现。',
+ startAll:'开始今天的复习',startNotes:'📷 仅错题',startWords:'🔤 仅单词',random:'🎲 随机10个',
+ done:n=>`🎉 复习完成! (${n}项)`,back:'返回',show:'查看答案',wrong:'又错了',right:'答对了',quit:'结束',
+ settings:'设置',language:'语言',storage:(u,q)=>`已用空间: ${u} / ${q}`,folder:'文件夹',noFolder:'未分类',newFolder:'新建文件夹',
+ editFolder:'编辑文件夹',folderPh:'文件夹名称 (例: 单词书 Day 3)',needName:'请输入名称',folderDel:'删除文件夹吗? (单词将移至"未分类")',
+ bulk:'📋 批量导入',bulkHelp:'每行一个: 单词 - 释义1, 释义2 (分隔符: " - ", Tab, :, =)',bulkPh:'apple - 苹果\nrun - 跑, 经营',
+ bulkAdd:'添加',bulkResult:(a,s)=>`已添加 ${a} 个 · 跳过 ${s} 行 (格式错误/重复)`,
+ mode:'单词复习方式',modes:{flash:'单词→释义',rev:'释义→单词',type:'拼写',mix:'混合'},typePh:'输入英语单词',check:'判分',
+ correct:'⭕ 正确!',incorrect:'❌ 错误',yourAns:'你的答案',next:'下一个',
+ kindEvent:'日程',kindExam:'考试',rangePh:'考试范围 (例: 第2~4章)',goalPh:'目标学习时长 (小时, 例: 10)',range:'范围',todayGoal:'今日目标',
+ hm:(h,m)=>[h&&h+'小时',(m||!h)&&m+'分钟'].filter(Boolean).join(''),
+ logTitle:'今日学习记录',logPh:'今天学习的时间 (分钟)',examEdit:'编辑考试',
+ autoTag:s=>`🏷️ 已根据当前课程(${s})自动选择科目`,classSub:'科目分类 (用于自动标记)',
+ gap:'碎片时间',gapText:(w,n)=>`复习 ${w} 个单词 · ${n} 道错题`,gapFree:'已全部复习! 来个随机复习吧?',
+ examPrio:(s,n)=>`📝 ${s}考试备考错题 ${n} 道`,
+ print:'🖨️ 试卷',printTitle:'生成错题试卷',scope:'出题范围',scopes:{all:'全部',due:'今日待复习',wrong:'复习中再次答错',recent:'最近7天'},
+ maxQ:'最多题数',withAns:'附答案',shuffle:'打乱顺序',make:'生成PDF',paperTitle:'错题试卷',name:'姓名',ansSheet:'答案',
+ noItems:'没有符合条件的题目',printHint:'请在打印界面选择"另存为PDF"。'}
+};
+
+/* ================= IndexedDB ================= */
+const DB={db:null,
+  open:()=>new Promise((ok,no)=>{const r=indexedDB.open('study-cal',1);
+    r.onupgradeneeded=()=>{r.result.createObjectStore('kv');r.result.createObjectStore('imgs')};
+    r.onsuccess=()=>{DB.db=r.result;ok()};r.onerror=()=>no(r.error)}),
+  run:(st,mode,fn)=>new Promise((ok,no)=>{const t=DB.db.transaction(st,mode),q=fn(t.objectStore(st));
+    t.oncomplete=()=>ok(q.result);t.onerror=t.onabort=()=>no(t.error)}),
+  get:(st,k)=>DB.run(st,'readonly',s=>s.get(k)),
+  put:(st,k,v)=>DB.run(st,'readwrite',s=>s.put(v,k)),
+  del:(st,k)=>DB.run(st,'readwrite',s=>s.delete(k)),
+  allImgs:()=>new Promise(ok=>{const m={},r=DB.db.transaction('imgs').objectStore('imgs').openCursor();
+    r.onsuccess=()=>{const c=r.result;if(c){m[c.key]=URL.createObjectURL(c.value);c.continue()}else ok(m)}})
+};
+
+/* ================= 데이터/유틸 ================= */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const SUBJ=['kor','math','eng','sci','soc','etc'];
+const LEGACY={'국어':'kor','수학':'math','영어':'eng','과학':'sci','사회':'soc','기타':'etc'};
+const SUBRX={kor:/국어|문학|독서|화법|작문|언어와|korean|国語|语文/i,math:/수학|미적|확통|기하|math|数学/i,eng:/영어|english|英語|英语/i,
+  sci:/과학|물리|화학|생물|생명|지구|science|physics|chem|bio|理科|科学|物理|化学|生物/i,soc:/사회|역사|한국사|지리|윤리|도덕|정치|경제|social|history|社会|历史|地理/i};
+const guessSub=t=>Object.keys(SUBRX).find(k=>SUBRX[k].test(t))||'etc';
+const subOf=t=>t.sub||guessSub(t.title);
+const COLORS=['#1a73e8','#e67c73','#33b679','#f6bf26','#8e24aa','#f4511e','#039be5','#616161'];
+const IV=[1,3,7,14,30], KEY='study-cal-v1';
+const navL=(navigator.language||'en').slice(0,2);
+let S={events:[],tt:[],notes:[],words:[],folders:[],lang:LANGS[navL]?navL:'en',rvMode:'flash'};
+let IMG={};
+const L=(k,...a)=>{const x=(T[S.lang]||T.en)[k]??T.en[k];return typeof x==='function'?x(...a):x};
+const LOC=()=>LOCS[S.lang];
+const dayN=(d,f='short')=>new Date(2023,0,1+d).toLocaleDateString(LOC(),{weekday:f});
+const save=()=>DB.put('kv','state',S).catch(()=>alert(L('storageFull')));
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const addDays=(k,n)=>{const d=new Date(k+'T00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toMin=t=>{const[a,b]=t.split(':');return +a*60+ +b};
+const fromMin=m=>String(m/60|0).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const TODAY=()=>ymd(new Date());
+const fmt=b=>b>1e9?(b/1e9).toFixed(1)+'GB':(b/1e6).toFixed(1)+'MB';
+const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
+const dur=m=>L('hm',Math.floor(m/60),m%60);
+const dday=(d,from=TODAY())=>{const n=Math.round((new Date(d+'T00:00')-new Date(from+'T00:00'))/864e5);return n===0?'D-Day':n>0?'D-'+n:'D+'+(-n)};
+const shuffle=a=>a.sort(()=>Math.random()-.5);
+const speak=w=>{if(!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(w);u.lang='en-US';speechSynthesis.speak(u)};
+
+let view='cal', cur=new Date(); cur.setDate(1);
+let sel=TODAY(), ttF='all', subF='all', fdF='all', rvFd='all', queue=null, qi=0, shown=false, typed=null;
+
+/* ================= 시간 분석 (자투리/플래너 공용) ================= */
+const H0=8,H1=22,PX=44,ORDER=[1,2,3,4,5,6,0];
+function busy(k){
+  const wd=new Date(k+'T00:00').getDay();
+  const b=[...S.tt.filter(t=>t.day===wd).map(t=>[toMin(t.start),toMin(t.end)]),
+    ...S.events.filter(e=>e.date===k&&e.time).map(e=>{const s=toMin(e.time);return[s,e.end&&toMin(e.end)>s?toMin(e.end):s+60]})]
+    .sort((a,b)=>a[0]-b[0]);
+  const m=[];b.forEach(x=>{const l=m[m.length-1];if(l&&x[0]<=l[1])l[1]=Math.max(l[1],x[1]);else m.push([...x])});
+  return m;
+}
+const gaps=k=>{const b=busy(k),g=[];for(let i=1;i<b.length;i++){if(b[i][0]-b[i-1][1]>=15)g.push([b[i-1][1],b[i][0]])}return g};
+const freeMin=k=>{let c=H0*60,f=0;busy(k).forEach(([s,e])=>{s=Math.max(s,H0*60);e=Math.min(e,H1*60);if(e>c){f+=Math.max(0,s-c);c=e}});return f+Math.max(0,H1*60-c)};
+function curClass(){
+  const d=new Date(),wd=d.getDay(),m=d.getHours()*60+d.getMinutes(),l=S.tt.filter(t=>t.day===wd);
+  return l.find(t=>toMin(t.start)<=m&&m<toMin(t.end))
+    ||l.filter(t=>m>=toMin(t.end)&&m-toMin(t.end)<=10).sort((a,b)=>toMin(b.end)-toMin(a.end))[0];
+}
+/* 시험 플래너 */
+const exams=()=>S.events.filter(e=>e.kind==='exam');
+const done=x=>Object.values(x.log||{}).reduce((a,b)=>a+b,0);
+function target(x,k){
+  const t=TODAY(); if(!x.goal||k<t||k>=x.date)return 0;
+  const days=[]; for(let d=t;d<x.date&&days.length<120;d=addDays(d,1))days.push(d);
+  const n=days.length, w=days.map((d,i)=>(freeMin(d)+30)*(1+i/n)), sw=w.reduce((a,b)=>a+b,0);
+  const before=Object.entries(x.log||{}).filter(([d])=>d<t).reduce((a,[,m])=>a+m,0);
+  const need=Math.max(0,x.goal*60-before), i=days.indexOf(k);
+  return i<0?0:Math.round(need*w[i]/sw/5)*5;
+}
+const soonSubs=()=>{const t=TODAY(),l=addDays(t,7);return new Set(exams().filter(e=>e.date>=t&&e.date<=l).map(e=>e.sub))};
+const prio=list=>{const s=soonSubs();return [...list].sort((a,b)=>(b.k==='note'&&s.has(b.r.subject))-(a.k==='note'&&s.has(a.r.subject)))};
+/* 자투리 복습량: 오답 약 3분, 단어 약 30초 */
+function gapPlan(min,k){
+  const n=prio(S.notes.filter(x=>x.due<=k).map(r=>({k:'note',r}))), w=S.words.filter(x=>x.due<=k).map(r=>({k:'word',r}));
+  const nN=Math.min(n.length,Math.floor(min/6)), nW=Math.min(w.length,Math.floor((min-nN*3)*2));
+  return {nN,nW,q:[...n.slice(0,nN),...w.slice(0,nW)]};
+}
+const allItems=(fd='all')=>[...S.notes.map(r=>({k:'note',r})),...S.words.filter(w=>fd==='all'||w.folder===fd).map(r=>({k:'word',r}))];
+
+/* ================= 공통 ================= */
+function applyLang(){
+  document.documentElement.lang=S.lang;
+  $$('[data-i]').forEach(e=>e.textContent=L(e.dataset.i));
+  $('#wq').placeholder=L('searchPh');
+}
+function settings(){
+  sheet(`<h3>⚙️ ${L('settings')}</h3><p class="lbl">🌐 ${L('language')}</p>
+    <div class="lgs">${Object.entries(LANGS).map(([k,n])=>`<button data-l="${k}" class="${k===S.lang?'on':''}">${n}</button>`).join('')}</div>
+    <p class="info" id="stg"></p>`,()=>{
+    $$('.lgs button').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();applyLang();render();settings()});
+    navigator.storage?.estimate?.().then(e=>$('#stg').textContent='💾 '+L('storage',fmt(e.usage),fmt(e.quota)));
+  });
+}
+$('#set').onclick=settings;
+function go(v){
+  view=v;
+  $$('.view').forEach(e=>e.classList.toggle('show',e.id==='v-'+v));
+  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  ['prev','next','today'].forEach(id=>$('#'+id).style.display=v==='cal'?'':'none');
+  $('#fab').style.display=v==='review'?'none':'block';
+  render();
+}
+const dueCount=()=>{const t=TODAY();return S.notes.filter(n=>n.due<=t).length+S.words.filter(w=>w.due<=t).length};
+function render(){
+  ({cal:renderCal,tt:renderTT,notes:renderNotes,vocab:renderVocab,review:renderReview})[view]();
+  const d=dueCount(); $('#badge').hidden=!d; $('#badge').textContent=d;
+}
+function sheet(html,bind){
+  $('#sheet').innerHTML=html;
+  $('#sheet').classList.add('open'); $('#dim').classList.add('open');
+  $$('#sheet .colors span').forEach(s=>s.onclick=()=>{$$('#sheet .colors span').forEach(x=>x.classList.remove('on'));s.classList.add('on')});
+  bind&&bind();
+}
+function closeSheet(){$('#sheet').classList.remove('open');$('#dim').classList.remove('open')}
+$('#dim').onclick=closeSheet;
+const colorPick=c=>`<div class="colors">${COLORS.map(x=>`<span data-c="${x}" class="${x===c?'on':''}" style="background:${x}"></span>`).join('')}</div>`;
+const getColor=()=>($('#sheet .colors .on')||{dataset:{c:COLORS[0]}}).dataset.c;
+const v=id=>$('#'+id).value.trim();
+const delBtn=has=>has?`<button class="btn bad" id="f-del">${L('del')}</button>`:'';
+const subOpts=s=>SUBJ.map(x=>`<option value="${x}" ${x===s?'selected':''}>${subName(x)}</option>`).join('');
+
+/* ================= 캘린더 ================= */
+function renderCal(){
+  const y=cur.getFullYear(), m=cur.getMonth(), t=TODAY();
+  $('#title').textContent=cur.toLocaleDateString(LOC(),{year:'numeric',month:'long'});
+  $('#wk').innerHTML=[0,1,2,3,4,5,6].map(d=>`<span>${dayN(d)}</span>`).join('');
+  const s=new Date(y,m,1-new Date(y,m,1).getDay());
+  let h='';
+  for(let i=0;i<42;i++){
+    const d=new Date(s.getFullYear(),s.getMonth(),s.getDate()+i), k=ymd(d), dw=d.getDay();
+    const ev=S.events.filter(e=>e.date===k);
+    h+=`<div class="cell ${d.getMonth()!==m?'out':''} ${k===sel?'sel':''}" data-d="${k}">
+      <span class="n ${k===t?'today':''} ${dw==0?'sun':dw==6?'sat':''}">${d.getDate()}</span>
+      ${ev.slice(0,3).map(e=>`<div class="chip" style="background:${e.color}">${e.kind==='exam'?'📝':''}${esc(e.title)}</div>`).join('')}
+      ${ev.length>3?`<div class="more">+${ev.length-3}</div>`:''}</div>`;
+  }
+  $('#grid').innerHTML=h;
+  $$('.cell').forEach(c=>c.onclick=()=>{sel=c.dataset.d;renderCal()});
+  renderAgenda();
+}
+function renderAgenda(){
+  const d=new Date(sel+'T00:00'), wd=d.getDay(), td=TODAY();
+  const items=[
+    ...S.events.filter(e=>e.date===sel).map(e=>({...e,k:'ev',kind:e.kind==='exam'?'📝 '+L('kindExam'):L('event'),start:e.time||''})),
+    ...S.tt.filter(t=>t.day===wd).map(t=>({...t,k:'tt',kind:t.type==='school'?'🏫 '+L('school'):'📚 '+L('academy')}))];
+  if(sel>=td)gaps(sel).forEach(([s,e])=>items.push({k:'gap',start:fromMin(s),end:fromMin(e),min:e-s}));
+  items.sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const plans=sel>=td?exams().filter(x=>x.date>sel).sort((a,b)=>a.date.localeCompare(b.date)):[];
+  const due=sel===td?dueCount():0;
+  const row=i=>{
+    if(i.k==='gap'){const p=gapPlan(i.min,sel);
+      return `<div class="item gap" data-k="gap" data-m="${i.min}"><div class="bar" style="background:#f6bf26"></div>
+        <div><b>⏳ ${L('gap')} · ${dur(i.min)}</b><small>${i.start}~${i.end} · ${p.q.length?L('gapText',p.nW,p.nN):L('gapFree')}</small></div></div>`}
+    return `<div class="item" data-k="${i.k}" data-id="${i.id}"><div class="bar" style="background:${i.color}"></div>
+      <div><b>${esc(i.title)}</b><small>${i.kind}${i.start?' · '+i.start:''}${i.end?'~'+i.end:''}${i.place?' · '+esc(i.place):''}</small></div></div>`;
+  };
+  const planRow=x=>{
+    const t=target(x,sel), dn=done(x), g=x.goal*60, ok=sel===td&&t&&(x.log?.[td]||0)>=t;
+    return `<div class="item" data-k="exam" data-id="${x.id}"><div class="bar" style="background:${x.color}"></div>
+      <div style="flex:1;min-width:0"><b>📝 ${esc(x.title)}</b><span class="dd">${dday(x.date,sel)}</span>
+      <small>${subName(x.sub)}${x.range?' · '+L('range')+': '+esc(x.range):''}</small>
+      ${g?`<small>🎯 ${L('todayGoal')} ${dur(t)}${ok?' ✅':''} · ${dur(dn)} / ${dur(g)}</small>
+      <div class="prog"><i style="width:${Math.min(100,dn/g*100)}%"></i></div>`:''}</div></div>`;
+  };
+  $('#agenda').innerHTML=`<h3>${d.toLocaleDateString(LOC(),{month:'long',day:'numeric',weekday:'short'})}</h3>
+    ${due?`<div class="due" id="goRv">${L('dueBanner',due)}</div>`:''}
+    ${plans.map(planRow).join('')}
+    ${items.length?items.map(row).join(''):`<div class="empty">${L('noEvents')}</div>`}`;
+  $('#goRv')&&($('#goRv').onclick=()=>go('review'));
+  $$('#agenda .item').forEach(e=>e.onclick=()=>{
+    const id=e.dataset.id, k=e.dataset.k;
+    if(k==='ev')eventForm(S.events.find(x=>x.id===id));
+    else if(k==='tt')ttForm(S.tt.find(x=>x.id===id));
+    else if(k==='exam')examSheet(S.events.find(x=>x.id===id));
+    else if(k==='gap'&&sel===td)gapStart(+e.dataset.m);
+  });
+}
+function gapStart(min){
+  const p=gapPlan(min,TODAY()), q=p.q.length?p.q:shuffle(allItems()).slice(0,10);
+  if(!q.length)return; go('review'); start(q);
+}
+function eventForm(e){
+  e=e||{kind:'event',date:sel,time:'',end:'',title:'',color:COLORS[0],sub:SUBJ.includes(subF)?subF:'math',range:'',goal:''};
+  let kind=e.kind||'event';
+  sheet(`<h3>${L(e.id?'editEvent':'newEvent')}</h3>
+    <div class="seg" id="kSeg" style="padding:0 0 12px">${['event','exam'].map(k=>`<button data-k="${k}">${k==='exam'?'📝 '+L('kindExam'):'📅 '+L('kindEvent')}</button>`).join('')}</div>
+    <div class="exf"><select id="f-sub">${subOpts(e.sub||'math')}</select></div>
+    <input id="f-title" placeholder="${L('titlePh')}" value="${esc(e.title)}">
+    <input type="date" id="f-date" value="${e.date}">
+    <div class="row"><input type="time" id="f-time" value="${e.time||''}"><input type="time" id="f-end" value="${e.end||''}"></div>
+    <div class="exf"><input id="f-range" placeholder="${L('rangePh')}" value="${esc(e.range)}">
+    <input type="number" id="f-goal" min="0" step="0.5" inputmode="decimal" placeholder="${L('goalPh')}" value="${e.goal||''}"></div>
+    ${colorPick(e.color)}
+    <div class="btns">${delBtn(e.id)}<button class="btn pri" id="f-ok">${L('save')}</button></div>`,()=>{
+    const setK=k=>{kind=k;$$('#kSeg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));$$('.exf').forEach(x=>x.hidden=k!=='exam')};
+    $$('#kSeg button').forEach(b=>b.onclick=()=>setK(b.dataset.k)); setK(kind);
+    $('#f-ok').onclick=()=>{
+      const o={kind,title:v('f-title'),date:v('f-date'),time:v('f-time'),end:v('f-end'),color:getColor()};
+      if(kind==='exam'){o.sub=v('f-sub');o.range=v('f-range');o.goal=Math.max(0,+v('f-goal')||0);if(!o.title)o.title=subName(o.sub)+' '+L('kindExam')}
+      if(!o.title||!o.date)return alert(L('needTitleDate'));
+      if(!o.time)o.end='';
+      if(o.time&&o.end&&toMin(o.end)<=toMin(o.time))return alert(L('badTime'));
+      e.id?Object.assign(S.events.find(x=>x.id===e.id),o):S.events.push({id:uid(),log:{},...o});
+      save();closeSheet();render();
+    };
+    $('#f-del')&&($('#f-del').onclick=()=>{S.events=S.events.filter(x=>x.id!==e.id);save();closeSheet();render()});
+  });
+}
+function examSheet(x){
+  const t=TODAY(), g=x.goal*60;
+  sheet(`<h3>📝 ${esc(x.title)} <span class="dd">${dday(x.date)}</span></h3>
+    <p class="info">${subName(x.sub)} · ${x.date}${x.range?'<br>'+L('range')+': '+esc(x.range):''}
+    ${g?`<br>🎯 ${L('todayGoal')}: ${dur(target(x,t))} · ${dur(done(x))} / ${dur(g)}`:''}</p>
+    <div class="prog"><i style="width:${g?Math.min(100,done(x)/g*100):0}%"></i></div>
+    <p class="lbl">${L('logTitle')}</p>
+    <input type="number" id="f-min" min="0" step="10" inputmode="numeric" placeholder="${L('logPh')}" value="${x.log?.[t]||''}">
+    <div class="btns"><button class="btn sec" id="f-ed">${L('examEdit')}</button><button class="btn pri" id="f-ok">${L('save')}</button></div>`,()=>{
+    $('#f-ok').onclick=()=>{x.log=x.log||{};const m=Math.max(0,Math.round(+v('f-min')||0));m?x.log[t]=m:delete x.log[t];save();closeSheet();render()};
+    $('#f-ed').onclick=()=>eventForm(x);
+  });
+}
+$('#prev').onclick=()=>{cur.setMonth(cur.getMonth()-1);renderCal()};
+$('#next').onclick=()=>{cur.setMonth(cur.getMonth()+1);renderCal()};
+$('#today').onclick=()=>{cur=new Date();cur.setDate(1);sel=TODAY();renderCal()};
+let tx=0;
+$('#grid').addEventListener('touchstart',e=>tx=e.touches[0].clientX);
+$('#grid').addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)(dx<0?$('#next'):$('#prev')).click()});
+
+/* ================= 시간표 ================= */
+function renderTT(){
+  $('#title').textContent=L('ttTitle');
+  const wd=new Date().getDay(), list=S.tt.filter(t=>ttF==='all'||t.type===ttF);
+  let h='<div class="tt"><div></div>'+ORDER.map(d=>`<div class="hd ${d===wd?'td':''}">${dayN(d)}</div>`).join('');
+  h+='<div>'+Array.from({length:H1-H0},(_,i)=>`<div class="hr">${H0+i}</div>`).join('')+'</div>';
+  ORDER.forEach(d=>{
+    h+=`<div class="tcol ${d===wd?'td':''}" style="height:${(H1-H0)*PX}px">`+
+      list.filter(t=>t.day===d).map(t=>{
+        const top=(toMin(t.start)-H0*60)/60*PX, ht=Math.max(18,(toMin(t.end)-toMin(t.start))/60*PX);
+        return `<div class="blk" data-id="${t.id}" style="top:${top}px;height:${ht}px;background:${t.color}">${esc(t.title)}<br>${esc(t.place)}</div>`;
+      }).join('')+'</div>';
+  });
+  $('#ttGrid').innerHTML=h+'</div>'+(S.tt.length?'':`<div class="empty">${L('ttEmpty')}</div>`);
+  $$('.blk').forEach(b=>b.onclick=()=>ttForm(S.tt.find(x=>x.id===b.dataset.id)));
+}
+$$('#ttFilter button').forEach(b=>b.onclick=()=>{ttF=b.dataset.f;$$('#ttFilter button').forEach(x=>x.classList.toggle('on',x===b));renderTT()});
+function ttForm(t){
+  t=t||{type:ttF==='academy'?'academy':'school',day:1,start:'09:00',end:'09:50',title:'',place:'',color:COLORS[2]};
+  sheet(`<h3>${L(t.id?'editClass':'addClass')}</h3>
+    <div class="row"><select id="f-type"><option value="school">🏫 ${L('school')}</option><option value="academy">📚 ${L('academy')}</option></select>
+    <select id="f-day">${ORDER.map(d=>`<option value="${d}">${dayN(d,'long')}</option>`).join('')}</select></div>
+    <input id="f-title" placeholder="${L('subjPh')}" value="${esc(t.title)}">
+    <p class="info" style="margin:0 0 4px">🏷️ ${L('classSub')}</p><select id="f-sub">${subOpts(subOf(t))}</select>
+    <input id="f-place" placeholder="${L('placePh')}" value="${esc(t.place)}">
+    <div class="row"><input type="time" id="f-start" value="${t.start}"><input type="time" id="f-end" value="${t.end}"></div>
+    ${colorPick(t.color)}
+    <div class="btns">${delBtn(t.id)}<button class="btn pri" id="f-ok">${L('save')}</button></div>`,()=>{
+    $('#f-type').value=t.type; $('#f-day').value=t.day;
+    let touched=!!t.sub;
+    $('#f-sub').onchange=()=>touched=true;
+    $('#f-title').oninput=()=>{if(!touched)$('#f-sub').value=guessSub(v('f-title'))};
+    $('#f-ok').onclick=()=>{
+      const o={type:v('f-type'),day:+v('f-day'),title:v('f-title'),sub:v('f-sub'),place:v('f-place'),start:v('f-start'),end:v('f-end'),color:getColor()};
+      if(!o.title)return alert(L('needSubj'));
+      if(toMin(o.end)<=toMin(o.start))return alert(L('badTime'));
+      t.id?Object.assign(S.tt.find(x=>x.id===t.id),o):S.tt.push({id:uid(),...o});
+      save();closeSheet();render();
+    };
+    $('#f-del')&&($('#f-del').onclick=()=>{S.tt=S.tt.filter(x=>x.id!==t.id);save();closeSheet();render()});
+  });
+}
+
+/* ================= 오답노트 ================= */
+const subName=s=>L('subj')[s]||s;
+function renderNotes(){
+  $('#title').textContent=L('notes');
+  $('#subFilter').innerHTML=[['all',L('all')],...SUBJ.map(s=>[s,subName(s)])].map(([k,n])=>`<button data-s="${k}" class="${k===subF?'on':''}">${n}</button>`).join('');
+  $$('#subFilter button').forEach(b=>b.onclick=()=>{subF=b.dataset.s;renderNotes()});
+  const list=S.notes.filter(n=>subF==='all'||n.subject===subF).sort((a,b)=>b.created.localeCompare(a.created));
+  $('#noteList').innerHTML=list.length?list.map(n=>`<div class="card" data-id="${n.id}"><img loading="lazy" src="${IMG[n.id]||''}">
+    <div><span class="badge">${subName(n.subject)}</span>${n.created.slice(5)}<br>${'⭐'.repeat(n.level)||'🆕'} ${esc(n.memo.slice(0,20))}</div></div>`).join('')
+    :`<div class="empty" style="grid-column:1/3">${L('notesEmpty')}</div>`;
+  $$('.card').forEach(c=>c.onclick=()=>noteDetail(S.notes.find(x=>x.id===c.dataset.id)));
+}
+function compress(file){
+  return new Promise(r=>{const img=new Image();img.onload=()=>{
+    const sc=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(img.src);c.toBlob(r,'image/jpeg',.75);};img.src=URL.createObjectURL(file);});
+}
+$('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;noteForm(await compress(f));e.target.value=''};
+function noteForm(blob){
+  const url=URL.createObjectURL(blob), cc=curClass(), def=cc?subOf(cc):(SUBJ.includes(subF)?subF:'etc');
+  sheet(`<h3>${L('saveNote')}</h3><img class="big" src="${url}">
+    ${cc?`<p class="info" style="margin:0 0 6px;color:#137333">${L('autoTag',esc(cc.title))}</p>`:''}
+    <select id="f-sub">${subOpts(def)}</select>
+    <textarea id="f-memo" rows="2" placeholder="${L('memoPh')}"></textarea>
+    <input id="f-ans" placeholder="${L('ansPh')}">
+    <button class="btn pri" id="f-ok">${L('save')}</button>`,()=>{
+    $('#f-ok').onclick=()=>{
+      const id=uid(); IMG[id]=url;
+      DB.put('imgs',id,blob).catch(()=>alert(L('storageFull')));
+      S.notes.push({id,subject:v('f-sub'),memo:v('f-memo'),answer:v('f-ans'),cls:cc?cc.title:'',created:TODAY(),level:0,due:TODAY(),ok:0,ng:0});
+      save();closeSheet();render();
+    };
+  });
+}
+function noteDetail(n){
+  sheet(`<h3><span class="badge">${subName(n.subject)}</span> ${n.created}</h3><img class="big" src="${IMG[n.id]||''}">
+    <p>📝 ${esc(n.memo)||L('noMemo')}</p><div class="ans">✅ ${L('answer')}: ${esc(n.answer)||'-'}</div>
+    <p class="info">${L('stats',n.ok,n.ng,n.due)}</p>${delBtn(1)}`,()=>{
+    $('#f-del').onclick=()=>{if(!confirm(L('confirmDel')))return;
+      S.notes=S.notes.filter(x=>x.id!==n.id);DB.del('imgs',n.id);URL.revokeObjectURL(IMG[n.id]);delete IMG[n.id];
+      save();closeSheet();render()};
+  });
+}
+/* 오답 시험지 PDF */
+function printForm(){
+  sheet(`<h3>${L('printTitle')}</h3>
+    <select id="p-sub"><option value="all">${L('all')}</option>${subOpts(subF)}</select>
+    <p class="lbl">${L('scope')}</p>
+    <select id="p-scope">${Object.entries(L('scopes')).map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select>
+    <p class="lbl">${L('maxQ')}</p><input type="number" id="p-max" value="20" min="1" inputmode="numeric">
+    <label><input type="checkbox" id="p-ans" checked> ${L('withAns')}</label>
+    <label><input type="checkbox" id="p-shuf"> ${L('shuffle')}</label>
+    <p class="info">🖨️ ${L('printHint')}</p>
+    <button class="btn pri" id="p-ok">${L('make')}</button>`,()=>{$('#p-ok').onclick=makePaper});
+}
+async function makePaper(){
+  const sub=v('p-sub'), sc=v('p-scope'), t=TODAY(), wk=addDays(t,-7);
+  let l=S.notes.filter(n=>(sub==='all'||n.subject===sub)&&(sc==='all'||(sc==='due'&&n.due<=t)||(sc==='wrong'&&n.ng>0)||(sc==='recent'&&n.created>=wk)))
+    .sort((a,b)=>a.created.localeCompare(b.created));
+  if($('#p-shuf').checked)shuffle(l);
+  l=l.slice(0,Math.max(1,+v('p-max')||20));
+  if(!l.length)return alert(L('noItems'));
+  const ttl=sub==='all'?L('all'):subName(sub), ans=$('#p-ans').checked;
+  $('#print').innerHTML=`<div class="ph"><h2>${L('paperTitle')} · ${ttl}</h2><span>${t} &nbsp; ${L('name')}: ______________</span></div>
+    <div class="pg">${l.map((n,i)=>`<div class="pq"><b>${i+1}.</b><img src="${IMG[n.id]||''}"><div class="sp"></div></div>`).join('')}</div>
+    ${ans?`<div class="pa"><h2>${L('ansSheet')} · ${ttl}</h2><ol>${l.map(n=>`<li><b>${esc(n.answer)||'-'}</b>${n.memo?' — '+esc(n.memo):''}</li>`).join('')}</ol></div>`:''}`;
+  await Promise.all([...$$('#print img')].map(i=>i.complete?0:new Promise(r=>i.onload=i.onerror=r)));
+  closeSheet(); setTimeout(()=>window.print(),350);
+}
+window.addEventListener('afterprint',()=>$('#print').innerHTML='');
+$('#printBtn').onclick=printForm;
+
+/* ================= 단어장 (폴더 / 일괄 입력) ================= */
+const isFolder=k=>S.folders.some(f=>f.id===k);
+const folderOpts=s=>`<option value="">${L('noFolder')}</option>`+S.folders.map(f=>`<option value="${f.id}" ${f.id===s?'selected':''}>${esc(f.name)}</option>`).join('');
+const newWord=(word,means,folder)=>({id:uid(),word,means,folder,created:TODAY(),level:0,due:TODAY(),ok:0,ng:0});
+function renderVocab(){
+  const cnt=k=>k==='all'?S.words.length:S.words.filter(w=>w.folder===k).length;
+  const chips=[['all',L('all')],...S.folders.map(f=>[f.id,f.name]),...(S.folders.length?[['',L('noFolder')]]:[])];
+  $('#fdBar').innerHTML=chips.map(([k,n])=>`<button data-f="${k}" class="${k===fdF?'on':''}">${esc(n)} <small>${cnt(k)}</small>${k===fdF&&isFolder(k)?' ✎':''}</button>`).join('')
+    +`<button data-f="+">＋ ${L('folder')}</button>`;
+  $$('#fdBar button').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.f;
+    if(k==='+')return folderForm();
+    if(k===fdF&&isFolder(k))return folderForm(S.folders.find(f=>f.id===k));
+    fdF=k;renderVocab();
+  });
+  const q=$('#wq').value.trim().toLowerCase();
+  const list=S.words.filter(w=>(fdF==='all'||w.folder===fdF)&&(!q||w.word.toLowerCase().includes(q)||w.means.some(m=>m.toLowerCase().includes(q))))
+    .sort((a,b)=>b.created.localeCompare(a.created));
+  $('#title').textContent=`${L('vocab')} (${list.length})`;
+  $('#wordList').innerHTML=list.length?list.map(w=>`<div class="word" data-id="${w.id}">
+    <div><b>${esc(w.word)}</b> <button class="spk" data-w="${esc(w.word)}">🔊</button>
+    <small>${w.means.map((m,i)=>`${i+1}. ${esc(m)}`).join('&nbsp;&nbsp;')}</small></div>
+    <span>${'⭐'.repeat(w.level)||'🆕'}</span></div>`).join('')
+    :`<div class="empty">${L('vocabEmpty')}</div>`;
+  $$('.word').forEach(e=>e.onclick=()=>wordForm(S.words.find(x=>x.id===e.dataset.id)));
+  $$('#wordList .spk').forEach(b=>b.onclick=ev=>{ev.stopPropagation();speak(b.dataset.w)});
+}
+$('#wq').oninput=renderVocab;
+function folderForm(f){
+  f=f||{name:''};
+  sheet(`<h3>${L(f.id?'editFolder':'newFolder')}</h3>
+    <input id="f-name" placeholder="${L('folderPh')}" value="${esc(f.name)}">
+    <div class="btns">${delBtn(f.id)}<button class="btn pri" id="f-ok">${L('save')}</button></div>`,()=>{
+    $('#f-ok').onclick=()=>{
+      const name=v('f-name'); if(!name)return alert(L('needName'));
+      if(f.id)S.folders.find(x=>x.id===f.id).name=name;
+      else{const id=uid();S.folders.push({id,name});fdF=id}
+      save();closeSheet();render();
+    };
+    $('#f-del')&&($('#f-del').onclick=()=>{if(!confirm(L('folderDel')))return;
+      S.folders=S.folders.filter(x=>x.id!==f.id);S.words.forEach(w=>{if(w.folder===f.id)w.folder=''});
+      fdF='all';if(rvFd===f.id)rvFd='all';save();closeSheet();render()});
+  });
+}
+function wordForm(w){
+  w=w||{word:'',means:[],folder:isFolder(fdF)?fdF:''};
+  sheet(`<h3>${L(w.id?'editWord':'addWord')}</h3>
+    ${S.folders.length?`<select id="f-fd">${folderOpts(w.folder)}</select>`:''}
+    <input id="f-word" placeholder="${L('wordPh')}" value="${esc(w.word)}" autocapitalize="off" autocomplete="off">
+    ${[0,1,2,3].map(i=>`<input class="f-mean" placeholder="${L('meanPh',i+1)}" value="${esc(w.means[i])}">`).join('')}
+    ${w.id?`<p class="info">${L('stats',w.ok,w.ng,w.due)}</p>`:''}
+    <div class="btns">${w.id?delBtn(1):`<button class="btn sec" id="f-more">${L('saveNext')}</button>`}
+    <button class="btn pri" id="f-ok">${L('save')}</button></div>`,()=>{
+    const put=()=>{
+      const word=v('f-word'), means=[...$$('.f-mean')].map(x=>x.value.trim()).filter(Boolean), folder=$('#f-fd')?$('#f-fd').value:'';
+      if(!word||!means.length){alert(L('needWord'));return false}
+      w.id?Object.assign(S.words.find(x=>x.id===w.id),{word,means,folder}):S.words.push(newWord(word,means,folder));
+      save();render();return true;
+    };
+    $('#f-ok').onclick=()=>put()&&closeSheet();
+    $('#f-more')&&($('#f-more').onclick=()=>{if(put()){wordForm();$('#f-word').focus()}});
+    $('#f-del')&&($('#f-del').onclick=()=>{if(confirm(L('confirmDel'))){S.words=S.words.filter(x=>x.id!==w.id);save();closeSheet();render()}});
+  });
+}
+function bulkForm(){
+  sheet(`<h3>${L('bulk')}</h3>
+    ${S.folders.length?`<select id="f-fd">${folderOpts(isFolder(fdF)?fdF:'')}</select>`:''}
+    <p class="info">${L('bulkHelp')}</p>
+    <textarea id="f-bulk" rows="9" placeholder="${esc(L('bulkPh'))}" autocapitalize="off"></textarea>
+    <button class="btn pri" id="f-ok">${L('bulkAdd')}</button>`,()=>{
+    $('#f-ok').onclick=()=>{
+      const folder=$('#f-fd')?$('#f-fd').value:''; let a=0,s=0;
+      $('#f-bulk').value.split(/\r?\n/).forEach(line=>{
+        line=line.trim(); if(!line)return;
+        const m=line.match(/^(.+?)(?:\s+[-–—]\s+|\t|\s*[:=：]\s*)(.+)$/);
+        if(!m){s++;return}
+        const word=m[1].trim(), means=m[2].split(/[,，;；\/、]/).map(x=>x.trim()).filter(Boolean).slice(0,4);
+        if(!word||!means.length||S.words.some(w=>w.folder===folder&&norm(w.word)===norm(word))){s++;return}
+        S.words.push(newWord(word,means,folder)); a++;
+      });
+      save();closeSheet();render();alert(L('bulkResult',a,s));
+    };
+  });
+}
+$('#bulkBtn').onclick=bulkForm;
+
+/* ================= 복습 ================= */
+const bt=(id,txt,cls,n)=>`<button class="btn ${cls}" id="${id}" ${n?'':'disabled'}>${txt}</button>`;
+function renderReview(){
+  $('#title').textContent=L('review');
+  const rv=$('#rv'), td=TODAY();
+  if(!queue){
+    const fdOk=w=>rvFd==='all'||w.folder===rvFd;
+    const dn=S.notes.filter(n=>n.due<=td).map(r=>({k:'note',r}));
+    const dw=S.words.filter(w=>w.due<=td&&fdOk(w)).map(r=>({k:'word',r}));
+    const ex=[...soonSubs()].map(s=>[s,S.notes.filter(n=>n.subject===s)]).filter(x=>x[1].length);
+    rv.innerHTML=`<div class="stat"><div><b>${dn.length}</b>📷 ${L('dueNotes')}</div><div><b>${dw.length}</b>🔤 ${L('dueWords')}</div></div>
+      <p class="lbl">🔤 ${L('mode')}</p>
+      <div class="seg" id="modeSeg">${Object.entries(L('modes')).map(([k,n])=>`<button data-m="${k}" class="${k===S.rvMode?'on':''}">${n}</button>`).join('')}</div>
+      ${S.folders.length?`<p class="lbl">📁 ${L('folder')}</p><select id="rvFd"><option value="all">${L('all')}</option>${folderOpts('')}</select>`:''}
+      <p class="info">${L('rvInfo')}</p>
+      ${bt('sa',L('startAll'),'pri',dn.length+dw.length)}
+      ${ex.map(([s,l],i)=>bt('ex'+i,L('examPrio',subName(s),l.length),'good',1)).join('')}
+      ${bt('sn',L('startNotes'),'sec',dn.length)}${bt('sw',L('startWords'),'sec',dw.length)}${bt('rnd',L('random'),'sec',allItems(rvFd).length)}`;
+    $$('#modeSeg button').forEach(b=>b.onclick=()=>{S.rvMode=b.dataset.m;save();renderReview()});
+    if($('#rvFd')){$('#rvFd').value=rvFd;$('#rvFd').onchange=e=>{rvFd=e.target.value;renderReview()}}
+    $('#sa').onclick=()=>start([...dn,...dw]);
+    ex.forEach(([s,l],i)=>$('#ex'+i).onclick=()=>start(l.map(r=>({k:'note',r}))));
+    $('#sn').onclick=()=>start(dn);
+    $('#sw').onclick=()=>start(dw);
+    $('#rnd').onclick=()=>start(shuffle(allItems(rvFd)).slice(0,10));
+    return;
+  }
+  if(qi>=queue.length){
+    rv.innerHTML=`<div class="empty" style="font-size:18px">${L('done',queue.length)}</div><button class="btn pri" id="bk">${L('back')}</button>`;
+    $('#bk').onclick=()=>{queue=null;render()};return;
+  }
+  const {k,r,m}=queue[qi];
+  let body, ans, ctrl;
+  if(k==='note'){
+    body=`<img class="big" src="${IMG[r.id]||''}"><p>📝 ${esc(r.memo)}</p>`;
+    ans=`✅ ${L('answer')}: ${esc(r.answer)||'-'}`;
+  }else{
+    const means=r.means.map((x,i)=>`${i+1}. ${esc(x)}`).join('<br>');
+    const wd=`${esc(r.word)} <button class="spk" data-w="${esc(r.word)}">🔊</button>`;
+    body=m==='flash'?`<div class="wcard">${wd}</div>`:`<div class="wcard mc">${means}</div>`;
+    ans=m==='flash'?means:`<b style="font-size:22px">${wd}</b>`;
+  }
+  if(m==='type'){
+    ctrl=typed?`<div class="ans">${typed.ok?L('correct'):`${L('incorrect')} · ${L('yourAns')}: ${esc(typed.v)||'-'}`}<br>${ans}</div>
+        <button class="btn ${typed.ok?'good':'bad'}" id="nx">${L('next')}</button>`
+      :`<input id="ty" class="tin" placeholder="${L('typePh')}" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <button class="btn pri" id="ck">${L('check')}</button>`;
+  }else{
+    ctrl=shown?`<div class="ans">${ans}</div>
+        <div class="btns"><button class="btn bad" id="ng">${L('wrong')}</button><button class="btn good" id="ok">${L('right')}</button></div>`
+      :`<button class="btn pri" id="sh">${L('show')}</button>`;
+  }
+  rv.innerHTML=`<div class="prog"><i style="width:${qi/queue.length*100}%"></i></div>
+    <p style="margin-top:10px"><span class="badge">${k==='note'?subName(r.subject):'🔤 '+L('modes')[m]}</span> ${qi+1} / ${queue.length}</p>
+    ${body}${ctrl}<button class="btn sec" id="qt">${L('quit')}</button>`;
+  $$('#rv .spk').forEach(b=>b.onclick=()=>speak(b.dataset.w));
+  const check=()=>{const val=$('#ty').value;typed={v:val,ok:norm(val)===norm(r.word)};if(typed.ok)speak(r.word);renderReview()};
+  if($('#ty')){$('#ty').onkeydown=e=>{if(e.key==='Enter')check()};setTimeout(()=>$('#ty')&&$('#ty').focus(),50)}
+  $('#ck')&&($('#ck').onclick=check);
+  $('#nx')&&($('#nx').onclick=()=>grade(typed.ok));
+  $('#sh')&&($('#sh').onclick=()=>{shown=true;renderReview()});
+  $('#ok')&&($('#ok').onclick=()=>grade(true));
+  $('#ng')&&($('#ng').onclick=()=>grade(false));
+  $('#qt').onclick=()=>{queue=null;render()};
+}
+function start(list){
+  const pick=()=>S.rvMode==='mix'?['flash','rev','type'][Math.random()*3|0]:S.rvMode;
+  queue=prio(list).map(x=>({...x,m:x.k==='word'?pick():''}));
+  qi=0;shown=false;typed=null;renderReview();
+}
+function grade(ok){
+  const n=queue[qi].r, t=TODAY();
+  if(ok){n.ok++;n.due=addDays(t,IV[Math.min(n.level,IV.length-1)]);n.level=Math.min(n.level+1,5)}
+  else{n.ng++;n.level=0;n.due=addDays(t,1)}
+  save();qi++;shown=false;typed=null;render();
+}
+
+/* ================= 시작 ================= */
+$('#fab').onclick=()=>({cal:()=>eventForm(),tt:()=>ttForm(),notes:()=>$('#file').click(),vocab:()=>wordForm()})[view]();
+$$('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+(async()=>{
+  try{
+    await DB.open();
+    let st=await DB.get('kv','state');
+    const old=localStorage.getItem(KEY);
+    if(!st&&old){
+      st=JSON.parse(old);
+      for(const n of st.notes||[]) if(n.img){await DB.put('imgs',n.id,await (await fetch(n.img)).blob());delete n.img}
+    }
+    Object.assign(S,st||{});
+    S.notes.forEach(n=>n.subject=LEGACY[n.subject]||n.subject);
+    S.words.forEach(w=>{w.folder??=''});
+    S.events.forEach(e=>{e.kind??='event'});
+    await DB.put('kv','state',S);
+    if(old)localStorage.removeItem(KEY);
+    IMG=await DB.allImgs();
+    navigator.storage?.persist?.();
+  }catch(e){alert('IndexedDB error: '+e.message)}
+  applyLang(); go('cal');
+})();
+</script>
+<!-- ===== v0.6 PWA + APK : </body> 바로 위, v0.5 패치 아래 ===== -->
+<style>
+nav{padding-bottom:env(safe-area-inset-bottom)}
+#fab{bottom:calc(84px + env(safe-area-inset-bottom))}
+header{padding-top:max(12px,env(safe-area-inset-top))}
+#sheet .tg{display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:15px}
+</style>
+<script>
+(()=>{
+/* ---------- 다국어 추가 ---------- */
+const T6={
+ko:{app:'앱 설치',install:'📲 홈 화면에 앱 설치',installed:'✅ 앱으로 설치되어 있어요',iosHint:'iPhone: Safari 공유 버튼 → "홈 화면에 추가"',
+ notif:'알림',notifOn:'매일 복습 알림',notifExam:'시험 D-7·3·1·Day 알림',notifTime:'알림 시간',test:'🔔 테스트 알림',
+ denied:'알림 권한이 꺼져 있어요. 휴대폰 설정에서 허용해 주세요.',
+ webNote:'웹 버전은 브라우저가 허락할 때만 알림이 와서 시간이 정확하지 않아요. 정확한 알림은 APK 버전에서 지원돼요.',
+ rvMsg:n=>`오늘 복습할 항목 ${n}개가 기다리고 있어요 🧠`,exMsg:d=>`${d}! 오늘 목표를 확인하세요 💪`,
+ updated:'새 버전이 있어요. 새로고침할까요?',noPrint:'APK에서는 인쇄가 지원되지 않아요. 크롬(웹 버전)에서 시험지를 만들어 주세요.'},
+en:{app:'Install app',install:'📲 Install to home screen',installed:'✅ Installed as an app',iosHint:'iPhone: Safari Share → "Add to Home Screen"',
+ notif:'Notifications',notifOn:'Daily review reminder',notifExam:'Exam D-7·3·1·Day alerts',notifTime:'Time',test:'🔔 Test notification',
+ denied:'Notifications are blocked. Please allow them in phone settings.',
+ webNote:'On the web, notifications only arrive when the browser allows, so timing is not exact. The APK version is exact.',
+ rvMsg:n=>`${n} items are waiting for review today 🧠`,exMsg:d=>`${d}! Check today's goal 💪`,
+ updated:'A new version is available. Reload?',noPrint:'Printing is not supported in the APK. Please use the web version in Chrome.'},
+ja:{app:'アプリをインストール',install:'📲 ホーム画面に追加',installed:'✅ アプリとしてインストール済み',iosHint:'iPhone: Safariの共有 →「ホーム画面に追加」',
+ notif:'通知',notifOn:'毎日の復習通知',notifExam:'試験 D-7·3·1·当日通知',notifTime:'通知時刻',test:'🔔 テスト通知',
+ denied:'通知がオフです。端末の設定で許可してください。',
+ webNote:'Web版はブラウザが許可した時だけ通知されるため時刻が正確ではありません。正確な通知はAPK版で対応しています。',
+ rvMsg:n=>`今日の復習が${n}件あります 🧠`,exMsg:d=>`${d}! 今日の目標を確認しよう 💪`,
+ updated:'新しいバージョンがあります。再読み込みしますか?',noPrint:'APKでは印刷できません。Chrome(Web版)でテストを作成してください。'},
+zh:{app:'安装应用',install:'📲 安装到主屏幕',installed:'✅ 已作为应用安装',iosHint:'iPhone: Safari 分享 →"添加到主屏幕"',
+ notif:'通知',notifOn:'每日复习提醒',notifExam:'考试 D-7·3·1·当天提醒',notifTime:'提醒时间',test:'🔔 测试通知',
+ denied:'通知权限已关闭，请在手机设置中允许。',
+ webNote:'网页版仅在浏览器允许时才会通知，时间不精确。APK 版支持准时提醒。',
+ rvMsg:n=>`今天有 ${n} 项待复习 🧠`,exMsg:d=>`${d}! 查看今天的目标 💪`,
+ updated:'有新版本，要刷新吗?',noPrint:'APK 不支持打印，请在 Chrome(网页版)中生成试卷。'}
+};
+Object.keys(T6).forEach(k=>Object.assign(T[k],T6[k]));
+
+/* ---------- 환경 ---------- */
+const CAP=window.Capacitor, NATIVE=!!CAP?.isNativePlatform?.(), P=CAP?.Plugins||{};
+const cfg=()=>S.notif=Object.assign({on:NATIVE,exam:NATIVE,time:'20:00'},S.notif);
+const b2d=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+let swReg=null, deferred=null, tm=null, booted=false;
+
+/* ---------- 앞으로 2주 알림 계획 (복습량을 날짜별로 미리 계산) ---------- */
+const dueOn=k=>S.notes.filter(n=>n.due<=k).length+S.words.filter(w=>w.due<=k).length;
+function plan(){
+  const c=cfg(), now=new Date(), out=[], [h,m]=c.time.split(':').map(Number);
+  for(let i=0;i<14;i++){
+    const d=new Date();d.setDate(d.getDate()+i);d.setHours(h,m,0,0);const k=ymd(d);
+    const add=(at,title,body)=>at>now&&out.push({at,title,body});
+    if(c.on){const n=dueOn(k);if(n)add(d,'🧠 Study Calendar',L('rvMsg',n))}
+    if(c.exam)exams().forEach(x=>{
+      const dd=Math.round((new Date(x.date+'T00:00')-new Date(k+'T00:00'))/864e5);
+      if([7,3,1,0].includes(dd)){const a=new Date(d);if(!dd)a.setHours(7,0,0,0);add(a,'📝 '+x.title,L('exMsg',dday(x.date,k)))}
+    });
+  }
+  return out;
+}
+
+/* ---------- 알림 (APK: 정확한 예약 / 웹: 브라우저 백그라운드) ---------- */
+async function askPerm(){
+  if(NATIVE)return (await P.LocalNotifications.requestPermissions()).display==='granted';
+  if(!('Notification' in window))return false;
+  return (await Notification.requestPermission())==='granted';
+}
+async function schedule(){
+  if(!NATIVE||!P.LocalNotifications)return;
+  const LN=P.LocalNotifications;
+  try{
+    const {notifications:p}=await LN.getPending();
+    if(p.length)await LN.cancel({notifications:p.map(x=>({id:x.id}))});
+    if((await LN.checkPermissions()).display!=='granted')return;
+    const list=plan().slice(0,60).map((x,i)=>({id:1000+i,title:x.title,body:x.body,schedule:{at:x.at,allowWhileIdle:true}}));
+    if(list.length)await LN.schedule({notifications:list});
+  }catch(e){console.warn(e)}
+}
+const resched=()=>{clearTimeout(tm);tm=setTimeout(schedule,1500)};
+async function regPeriodic(){
+  if(!swReg?.periodicSync)return;
+  try{if((await navigator.permissions.query({name:'periodic-background-sync'})).state==='granted')
+    await swReg.periodicSync.register('study-daily',{minInterval:6*3600e3})}catch(e){}
+}
+function webNotify(title,body){
+  if(Notification.permission!=='granted')return;
+  swReg?swReg.showNotification(title,{body,icon:'icon-192.png',tag:'test'}):new Notification(title,{body});
+}
+
+/* ---------- 설정 화면 확장 ---------- */
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e});
+const standalone=()=>NATIVE||matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const baseSettings=settings;
+settings=function(){
+  baseSettings(); const c=cfg();
+  $('#sheet').insertAdjacentHTML('beforeend',`<p class="lbl">🔔 ${L('notif')}</p>
+    <label class="tg">${L('notifOn')}<input type="checkbox" id="n-on" ${c.on?'checked':''}></label>
+    <label class="tg">${L('notifExam')}<input type="checkbox" id="n-ex" ${c.exam?'checked':''}></label>
+    <div class="tg">${L('notifTime')}<input type="time" id="n-tm" value="${c.time}" style="width:auto;margin:0"></div>
+    ${NATIVE?'':`<p class="info">${L('webNote')}</p>`}
+    <button class="btn sec" id="n-test">${L('test')}</button>
+    ${NATIVE?'':`<p class="lbl">📲 ${L('app')}</p>${standalone()?`<p class="info">${L('installed')}</p>`
+      :deferred?`<button class="btn pri" id="ins">${L('install')}</button>`:ios?`<p class="info">${L('iosHint')}</p>`:''}`}`);
+  const upd=async()=>{
+    if(($('#n-on').checked||$('#n-ex').checked)&&!(await askPerm())){alert(L('denied'));$('#n-on').checked=$('#n-ex').checked=false}
+    Object.assign(S.notif,{on:$('#n-on').checked,exam:$('#n-ex').checked,time:$('#n-tm').value||'20:00'});
+    save();resched();regPeriodic();
+  };
+  ['n-on','n-ex','n-tm'].forEach(id=>$('#'+id).onchange=upd);
+  $('#n-test').onclick=async()=>{
+    if(!(await askPerm()))return alert(L('denied'));
+    const body=L('rvMsg',dueCount());
+    NATIVE?P.LocalNotifications.schedule({notifications:[{id:1,title:'🧠 Study Calendar',body,schedule:{at:new Date(Date.now()+3000)}}]})
+          :webNotify('🧠 Study Calendar',body);
+  };
+  $('#ins')&&($('#ins').onclick=async()=>{deferred.prompt();await deferred.userChoice;deferred=null;closeSheet()});
+};
+$('#set').onclick=settings;
+
+/* ---------- 시작 처리 ---------- */
+function boot(){
+  const p=new URLSearchParams(location.search).get('v');
+  if(['tt','notes','vocab','review'].includes(p))setTimeout(()=>go(p));
+  if(NATIVE&&!S.notif){cfg();save();askPerm().then(resched)}
+  if(!NATIVE&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+    const had=!!navigator.serviceWorker.controller; let asked=false;
+    navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;regPeriodic()});
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(had&&!asked){asked=true;if(confirm(L('updated')))location.reload()}});
+  }
+}
+const baseRender=render;
+render=function(){baseRender();resched();if(!booted){booted=true;boot()}};
+
+/* ---------- APK 전용 보완 ---------- */
+if(NATIVE){
+  // 뒤로가기: 시트 닫기 → 복습 종료 → 캘린더 → 앱 종료
+  P.App?.addListener('backButton',()=>{
+    if($('#sheet').classList.contains('open'))closeSheet();
+    else if(view==='review'&&queue){queue=null;render()}
+    else if(view!=='cal')go('cal');
+    else P.App.exitApp();
+  });
+  // 앱으로 돌아오면 날짜·복습 수 갱신
+  P.App?.addListener('appStateChange',({isActive})=>isActive&&render());
+  // 백업 파일: WebView는 다운로드 불가 → 공유 시트로 (드라이브·카톡 등)
+  document.addEventListener('click',async e=>{
+    const a=e.target.closest?.('a[download]');
+    if(!a||!a.href.startsWith('blob:')||!P.Filesystem||!P.Share)return;
+    e.preventDefault();
+    try{
+      const data=(await b2d(await (await fetch(a.href)).blob())).split(',')[1];
+      const r=await P.Filesystem.writeFile({path:a.download,data,directory:'CACHE'});
+      await P.Share.share({title:a.download,files:[r.uri]});
+    }catch(err){console.warn(err)}
+  },true);
+  // 발음 듣기: WebView에는 음성합성이 없음 → TTS 플러그인으로 대체
+  if(P.TextToSpeech)try{
+    window.SpeechSynthesisUtterance=function(t){this.text=t;this.lang='en-US'};
+    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+      cancel:()=>P.TextToSpeech.stop().catch(()=>{}),
+      speak:u=>P.TextToSpeech.speak({text:u.text,lang:u.lang||'en-US',rate:.9}).catch(()=>{})}});
+  }catch(e){}
+  window.print=()=>alert(L('noPrint'));
+}
+})();
+</script>
+
+</body>
+<!-- ===== v0.5 백업/복원 : </body> 바로 위에 붙여넣기 ===== -->
+<style>
+#set{position:relative}
+#set.warn::after{content:'';position:absolute;top:4px;right:6px;width:8px;height:8px;border-radius:50%;background:#d93025}
+.bkw{background:#fce8e6;color:#c5221f;padding:10px;border-radius:10px;font-size:13px;margin-top:8px;line-height:1.5}
+</style>
+<script>
+(()=>{
+/* ---------- 다국어 추가 ---------- */
+const T5={
+ko:{backup:'백업 / 복원',exportB:'📤 백업 파일 만들기',importB:'📥 백업 파일 불러오기',lastBk:d=>`마지막 백업: ${d}`,never:'아직 백업한 적이 없어요',
+ daysAgo:n=>n?`${n}일 전`:'오늘',bkWarn:'⚠️ 7일 넘게 백업하지 않았어요. 기기를 바꾸거나 브라우저 데이터를 지우면 모두 사라질 수 있어요.',
+ bkDone:n=>`백업 파일을 저장했어요 (사진 ${n}장 포함). 다운로드 폴더를 확인하세요.`,badFile:'올바른 백업 파일이 아닙니다.',
+ impTitle:'백업 불러오기',impInfo:(d,e,n,w)=>`${d} 백업 · 일정 ${e} · 오답 ${n} · 단어 ${w}`,merge:'➕ 합치기 (기존 데이터 유지)',
+ replace:'♻️ 덮어쓰기 (기존 데이터 삭제)',impConfirm:'현재 데이터가 모두 삭제되고 백업 내용으로 바뀝니다. 계속할까요?',
+ impDone:(e,n,w)=>`불러오기 완료! 일정 ${e} · 오답 ${n} · 단어 ${w}`,wordsTxt:'📋 단어장 텍스트로 내보내기',copy:'복사',
+ copied:'복사했어요! 단어장의 일괄 입력에 붙여넣을 수 있어요.',working:'⏳ 처리 중...'},
+en:{backup:'Backup / Restore',exportB:'📤 Create backup file',importB:'📥 Restore from backup',lastBk:d=>`Last backup: ${d}`,never:'Never backed up',
+ daysAgo:n=>n?`${n} days ago`:'today',bkWarn:'⚠️ No backup for over 7 days. Data may be lost if you change devices or clear browser data.',
+ bkDone:n=>`Backup saved (${n} photos included). Check your Downloads folder.`,badFile:'Not a valid backup file.',
+ impTitle:'Restore backup',impInfo:(d,e,n,w)=>`Backup from ${d} · ${e} events · ${n} mistakes · ${w} words`,merge:'➕ Merge (keep current data)',
+ replace:'♻️ Replace (delete current data)',impConfirm:'All current data will be replaced by the backup. Continue?',
+ impDone:(e,n,w)=>`Restored! ${e} events · ${n} mistakes · ${w} words`,wordsTxt:'📋 Export words as text',copy:'Copy',
+ copied:'Copied! You can paste it into Bulk add.',working:'⏳ Working...'},
+ja:{backup:'バックアップ / 復元',exportB:'📤 バックアップを作成',importB:'📥 バックアップから復元',lastBk:d=>`最終バックアップ: ${d}`,never:'まだバックアップしていません',
+ daysAgo:n=>n?`${n}日前`:'今日',bkWarn:'⚠️ 7日以上バックアップしていません。機種変更やブラウザデータ削除でデータが消える可能性があります。',
+ bkDone:n=>`バックアップを保存しました (写真${n}枚)。ダウンロードフォルダを確認してください。`,badFile:'有効なバックアップファイルではありません。',
+ impTitle:'バックアップを復元',impInfo:(d,e,n,w)=>`${d}のバックアップ · 予定${e} · 間違い${n} · 単語${w}`,merge:'➕ 統合 (現在のデータを保持)',
+ replace:'♻️ 上書き (現在のデータを削除)',impConfirm:'現在のデータはすべてバックアップで置き換えられます。続けますか?',
+ impDone:(e,n,w)=>`復元完了! 予定${e} · 間違い${n} · 単語${w}`,wordsTxt:'📋 単語帳をテキストで書き出す',copy:'コピー',
+ copied:'コピーしました! 一括入力に貼り付けできます。',working:'⏳ 処理中...'},
+zh:{backup:'备份 / 恢复',exportB:'📤 创建备份文件',importB:'📥 从备份恢复',lastBk:d=>`上次备份: ${d}`,never:'尚未备份',
+ daysAgo:n=>n?`${n}天前`:'今天',bkWarn:'⚠️ 已超过7天未备份。更换设备或清除浏览器数据可能导致数据丢失。',
+ bkDone:n=>`备份已保存 (含 ${n} 张照片)。请查看下载文件夹。`,badFile:'不是有效的备份文件。',
+ impTitle:'恢复备份',impInfo:(d,e,n,w)=>`${d} 的备份 · 日程 ${e} · 错题 ${n} · 单词 ${w}`,merge:'➕ 合并 (保留现有数据)',
+ replace:'♻️ 覆盖 (删除现有数据)',impConfirm:'现有数据将全部被备份替换。是否继续?',
+ impDone:(e,n,w)=>`恢复完成! 日程 ${e} · 错题 ${n} · 单词 ${w}`,wordsTxt:'📋 导出单词为文本',copy:'复制',
+ copied:'已复制! 可粘贴到批量导入中。',working:'⏳ 处理中...'}
+};
+Object.keys(T5).forEach(k=>Object.assign(T[k],T5[k]));
+
+/* ---------- 유틸 ---------- */
+const LISTS=['events','tt','notes','words','folders'];
+const b2d=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+const allBlobs=()=>new Promise((ok,no)=>{const m={},q=DB.db.transaction('imgs').objectStore('imgs').openCursor();
+  q.onsuccess=()=>{const c=q.result;if(c){m[c.key]=c.value;c.continue()}else ok(m)};q.onerror=()=>no(q.error)});
+const daysSince=d=>d?Math.round((new Date(TODAY()+'T00:00')-new Date(d+'T00:00'))/864e5):Infinity;
+const needBk=()=>S.events.length+S.tt.length+S.notes.length+S.words.length>0&&daysSince(S.lastBackup)>7;
+const busyBtn=id=>{const b=$('#'+id);if(b){b.disabled=true;b.textContent=L('working')}};
+function download(file){
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+}
+
+/* ---------- 백업 ---------- */
+async function exportBk(){
+  busyBtn('bk-ex');
+  try{
+    const blobs=await allBlobs(), imgs={};
+    for(const n of S.notes) if(blobs[n.id]) imgs[n.id]=await b2d(blobs[n.id]);
+    const data={app:'study-calendar',ver:5,date:new Date().toISOString(),state:S,imgs};
+    download(new File([JSON.stringify(data)],`study-calendar-backup-${TODAY()}.json`,{type:'application/json'}));
+    S.lastBackup=TODAY(); await save();
+    alert(L('bkDone',Object.keys(imgs).length));
+  }catch(e){alert(L('storageFull')+' '+e.message)}
+  closeSheet(); render();
+}
+
+/* ---------- 복원 ---------- */
+const pick=document.createElement('input'); pick.type='file'; pick.accept='.json,application/json';
+pick.onchange=async()=>{
+  const f=pick.files[0]; pick.value=''; if(!f)return;
+  let d=null; try{d=JSON.parse(await f.text())}catch(e){}
+  if(!d||d.app!=='study-calendar'||!d.state)return alert(L('badFile'));
+  importSheet(d);
+};
+function importSheet(d){
+  const c=k=>(d.state[k]||[]).length;
+  sheet(`<h3>📥 ${L('impTitle')}</h3>
+    <p class="info">${L('impInfo',esc((d.date||'').slice(0,10)),c('events'),c('notes'),c('words'))}</p>
+    <button class="btn pri" id="im-m">${L('merge')}</button>
+    <button class="btn bad" id="im-r">${L('replace')}</button>`,()=>{
+    $('#im-m').onclick=()=>doImport(d,false);
+    $('#im-r').onclick=()=>confirm(L('impConfirm'))&&doImport(d,true);
+  });
+}
+async function doImport(d,replace){
+  busyBtn('im-m'); busyBtn('im-r');
+  try{
+    const st=d.state, imgs=d.imgs||{}, add={}, next={};
+    LISTS.forEach(k=>{
+      const src=(st[k]||[]).filter(x=>x&&x.id);
+      if(replace){add[k]=src;next[k]=[...src]}
+      else{const ids=new Set(S[k].map(x=>x.id));add[k]=src.filter(x=>!ids.has(x.id));next[k]=[...S[k],...add[k]]}
+    });
+    // 사진 먼저 저장 (실패 시 기존 데이터 보존)
+    for(const n of add.notes) if(imgs[n.id]) await DB.put('imgs',n.id,await (await fetch(imgs[n.id])).blob());
+    Object.assign(S,next);
+    if(replace){if(st.lang)S.lang=st.lang;if(st.rvMode)S.rvMode=st.rvMode}
+    S.notes.forEach(n=>n.subject=LEGACY[n.subject]||n.subject);
+    S.words.forEach(w=>{w.folder??=''}); S.events.forEach(e=>{e.kind??='event'});
+    await DB.put('kv','state',S);
+    if(replace){ // 쓰지 않는 사진 정리
+      const keep=new Set(S.notes.map(n=>n.id)), ks=await DB.run('imgs','readonly',s=>s.getAllKeys());
+      for(const k of ks) if(!keep.has(k)) await DB.del('imgs',k);
+    }
+    Object.values(IMG).forEach(u=>URL.revokeObjectURL(u)); IMG=await DB.allImgs();
+    queue=null; fdF='all'; rvFd='all';
+    closeSheet(); applyLang(); render();
+    alert(L('impDone',add.events.length,add.notes.length,add.words.length));
+  }catch(e){alert(L('badFile')+' '+e.message);closeSheet()}
+}
+
+/* ---------- 단어장 텍스트 내보내기 ---------- */
+function wordsText(){
+  const txt=S.words.filter(w=>fdF==='all'||w.folder===fdF).map(w=>`${w.word} - ${w.means.join(', ')}`).join('\n');
+  sheet(`<h3>${L('wordsTxt')}</h3><textarea id="w-tx" rows="12" readonly>${esc(txt)}</textarea>
+    <button class="btn pri" id="w-cp">${L('copy')}</button>`,()=>{
+    $('#w-cp').onclick=async()=>{const t=$('#w-tx');
+      try{await navigator.clipboard.writeText(t.value)}catch(e){t.select();document.execCommand('copy')}
+      alert(L('copied'))};
+  });
+}
+
+/* ---------- 설정 화면 확장 + 알림 점 ---------- */
+const baseSettings=settings;
+settings=function(){
+  baseSettings();
+  const d=daysSince(S.lastBackup);
+  $('#sheet').insertAdjacentHTML('beforeend',`<p class="lbl">💾 ${L('backup')}</p>
+    <p class="info" style="margin:0">${S.lastBackup?L('lastBk',`${S.lastBackup} (${L('daysAgo',d)})`):L('never')}</p>
+    ${needBk()?`<div class="bkw">${L('bkWarn')}</div>`:''}
+    <button class="btn pri" id="bk-ex">${L('exportB')}</button>
+    <button class="btn sec" id="bk-im">${L('importB')}</button>
+    <button class="btn sec" id="bk-tx" ${S.words.length?'':'disabled'}>${L('wordsTxt')}</button>`);
+  $('#bk-ex').onclick=exportBk;
+  $('#bk-im').onclick=()=>pick.click();
+  $('#bk-tx').onclick=wordsText;
+};
+$('#set').onclick=settings;
+const baseRender=render;
+render=function(){baseRender();$('#set').classList.toggle('warn',needBk())};
+})();
+</script>
+
+</html>
